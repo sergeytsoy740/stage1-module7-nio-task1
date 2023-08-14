@@ -1,9 +1,10 @@
 package com.epam.mjc.nio;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 
 
 public class FileReader {
@@ -11,30 +12,59 @@ public class FileReader {
     public Profile getDataFromFile(File file) {
 
         String content = readFileIntoString(file);
-        String[] pairs = parseContent(content);
-        return mapDataToProfile(pairs);
+        if (content == null) {
+            return null;
+        } else {
+            String[] pairs = parseContent(content);
+            return mapDataToProfile(pairs);
+        }
     }
 
     private Profile mapDataToProfile(String[] pairs) {
-        int step = pairs[0].length() - 2;
-        Profile profile = new Profile();
-        profile.setName(pairs[1].strip());
-        profile.setAge(Integer.valueOf(pairs[1 + step].strip()));
-        profile.setEmail(pairs[1 + step * 2].strip());
-        profile.setPhone(Long.valueOf(pairs[1 + step * 3].strip()));
-        return profile;
+        Profile p = new Profile();
+        String[] pair;
+        for (int i = 0; i < pairs.length; i++) {
+            pair = pairs[i].split("\\s");
+            switch (pair[0]) {
+                case "Name:":
+                    p.setName(pair[1]);
+                    break;
+                case "Age:":
+                    p.setAge(Integer.valueOf(pair[1]));
+                    break;
+                case "Email:":
+                    p.setEmail(pair[1]);
+                    break;
+                case "Phone:":
+                    p.setPhone(Long.valueOf(pair[1]));
+                    break;
+                default:
+                    try {
+                        throw new IOException("Such field does not exist.");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+            }
+        }
+        return p;
     }
 
     private String[] parseContent(String content) {
-        return content.split("\\s");
+        return content.split("\n");
     }
 
     private String readFileIntoString(File file) {
-        try {
-            return Files.readString(Path.of(file.getAbsolutePath()));
+        StringBuilder sb = new StringBuilder();
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(file.getPath()))) {
+            String buffer;
+            while ((buffer = reader.readLine()) != null) {
+                sb.append(buffer).append("\n");
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
+        return sb.toString().strip();
     }
 }
